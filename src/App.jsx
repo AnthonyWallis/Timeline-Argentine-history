@@ -4,7 +4,9 @@ import { ChevronLeft, ChevronRight, Filter, MapPin, Calendar, Tag, Plus, X, User
 
 const START_YEAR = 1850;
 const CURRENT_YEAR = new Date().getFullYear();
+const STORAGE_KEY = "timeline-items-v1";
 
+/* ---------------------- helpers ---------------------- */
 function getYear(dateStr) {
   const y = parseInt(dateStr?.slice(0, 4), 10);
   return Number.isFinite(y) ? y : START_YEAR;
@@ -28,6 +30,7 @@ function youtubeEmbed(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes("youtu")) {
+      // https://www.youtube.com/watch?v=ID  OR  https://youtu.be/ID
       const id = u.searchParams.get("v") || u.pathname.replace("/", "");
       return `https://www.youtube.com/embed/${id}`;
     }
@@ -50,15 +53,20 @@ function vimeoEmbed(url) {
   }
 }
 
-/** ---- DATA: start empty (no sample items) ---- */
+/* ---------------------- data load/save ---------------------- */
 function getInitialItems() {
-  return []; // clean slate
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
 }
 
-/** ---- VIEWS ---- */
+/* ---------------------- views ---------------------- */
 const VIEW = { DATE: "Date", PLACE: "Place", EVENT: "Event", PERSON: "Person" };
 
-/** ---- MEDIA RENDERER ---- */
+/* ---------------------- media ---------------------- */
 function MediaRenderer({ media }) {
   if (!media?.length) return null;
   return (
@@ -106,7 +114,7 @@ function MediaRenderer({ media }) {
   );
 }
 
-/** ---- FILTERS / STATE ---- */
+/* ---------------------- filters ---------------------- */
 function useFilters(items) {
   const [query, setQuery] = useState("");
   const [view, setView] = useState(VIEW.DATE);
@@ -172,7 +180,7 @@ function useFilters(items) {
   };
 }
 
-/** ---- RIGHT RAIL ---- */
+/* ---------------------- right rail ---------------------- */
 function RightRail({
   items, view, setView,
   query, setQuery,
@@ -234,39 +242,38 @@ function RightRail({
           </label>
         </div>
 
-<label className="flex flex-col gap-1">
-  <span className="text-gray-500">Place</span>
-  <select
-    value={place}
-    onChange={(e) => setPlace(e.target.value)}
-    className="w-full rounded-xl border px-3 py-2 text-sm"
-  >
-    {places.map((p) => (<option key={p} value={p}>{p}</option>))}
-  </select>
-</label>
+        <label className="flex flex-col gap-1">
+          <span className="text-gray-500">Place</span>
+          <select
+            value={place}
+            onChange={(e) => setPlace(e.target.value)}
+            className="w-full rounded-xl border px-3 py-2 text-sm"
+          >
+            {places.map((p) => (<option key={p} value={p}>{p}</option>))}
+          </select>
+        </label>
 
-<label className="flex flex-col gap-1">
-  <span className="text-gray-500">Event</span>
-  <select
-    value={event}
-    onChange={(e) => setEvent(e.target.value)}
-    className="w-full rounded-xl border px-3 py-2 text-sm"
-  >
-    {events.map((t) => (<option key={t} value={t}>{t}</option>))}
-  </select>
-</label>
+        <label className="flex flex-col gap-1">
+          <span className="text-gray-500">Event</span>
+          <select
+            value={event}
+            onChange={(e) => setEvent(e.target.value)}
+            className="w-full rounded-xl border px-3 py-2 text-sm"
+          >
+            {events.map((t) => (<option key={t} value={t}>{t}</option>))}
+          </select>
+        </label>
 
-<label className="flex flex-col gap-1">
-  <span className="text-gray-500">Person</span>
-  <select
-    value={person}
-    onChange={(e) => setPerson(e.target.value)}
-    className="w-full rounded-xl border px-3 py-2 text-sm"
-  >
-    {persons.map((t) => (<option key={t} value={t}>{t}</option>))}
-  </select>
-</label>
-
+        <label className="flex flex-col gap-1">
+          <span className="text-gray-500">Person</span>
+          <select
+            value={person}
+            onChange={(e) => setPerson(e.target.value)}
+            className="w-full rounded-xl border px-3 py-2 text-sm"
+          >
+            {persons.map((t) => (<option key={t} value={t}>{t}</option>))}
+          </select>
+        </label>
       </div>
 
       <div className="mt-6">
@@ -308,22 +315,19 @@ function RightRail({
   );
 }
 
-/** ---- DETAIL + QUICK ADD ---- */
+/* ---------------------- detail + quick add ---------------------- */
 function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
-  // Show an "Add entry" button even when there are no items yet
+  // Empty state still shows "Add entry"
   if (!item) {
     return (
       <div className="p-6">
         <div className="flex items-start justify-between gap-2">
-          <p className="text-gray-500">
-            Use <b>Add entry</b> to add your first item.
-          </p>
+          <p className="text-gray-500">Use <b>Add entry</b> to add your first item.</p>
           <button
             onClick={() => setShowAdd(!showAdd)}
             className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
           >
-            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}{" "}
-            {showAdd ? "Close" : "Add entry"}
+            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {showAdd ? "Close" : "Add entry"}
           </button>
         </div>
 
@@ -335,9 +339,7 @@ function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
               exit={{ opacity: 0, y: -8 }}
               className="mt-6 p-4 rounded-2xl border bg-white shadow-sm"
             >
-              <h2 className="text-lg font-semibold mb-3">
-                Quick add your first entry
-              </h2>
+              <h2 className="text-lg font-semibold mb-3">Quick add your first entry</h2>
               <QuickAdd onAdd={onAdd} />
             </motion.div>
           )}
@@ -346,14 +348,12 @@ function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
     );
   }
 
-  // Normal detail view (unchanged)
   return (
     <div className="p-6">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-sm text-gray-500">
-            {formatDate(item.date)} • {item.place} • {item.event}
-            {item.person ? ` • ${item.person}` : ""}
+            {formatDate(item.date)} • {item.place} • {item.event}{item.person ? ` • ${item.person}` : ""}
           </div>
           <h1 className="text-2xl font-bold mt-1">{item.title}</h1>
         </div>
@@ -362,16 +362,11 @@ function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
             onClick={() => setShowAdd(!showAdd)}
             className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
           >
-            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}{" "}
-            {showAdd ? "Close" : "Add entry"}
+            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {showAdd ? "Close" : "Add entry"}
           </button>
           <div className="inline-flex rounded-xl overflow-hidden border">
-            <button onClick={onPrev} className="px-3 py-2 hover:bg-gray-50" title="Previous">
-              <ChevronLeft className="w-5 h-5" />
-            </button>
-            <button onClick={onNext} className="px-3 py-2 hover:bg-gray-50" title="Next">
-              <ChevronRight className="w-5 h-5" />
-            </button>
+            <button onClick={onPrev} className="px-3 py-2 hover:bg-gray-50" title="Previous"><ChevronLeft className="w-5 h-5" /></button>
+            <button onClick={onNext} className="px-3 py-2 hover:bg-gray-50" title="Next"><ChevronRight className="w-5 h-5" /></button>
           </div>
         </div>
       </div>
@@ -403,17 +398,37 @@ function QuickAdd({ onAdd }) {
   const [event, setEvent] = useState("");
   const [person, setPerson] = useState("");
   const [description, setDescription] = useState("");
-  const [image, setImage] = useState("");
-  const [video, setVideo] = useState("");
+
+  // image via URL or upload
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageData, setImageData] = useState(""); // data URL from file
+  const [videoUrl, setVideoUrl] = useState("");
+
+  function onPickImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setImageData(String(reader.result));
+    reader.readAsDataURL(file);
+  }
 
   function submit(e) {
     e.preventDefault();
     const id = `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "")}-${Date.now()}`;
+
     const media = [];
-    if (image) media.push({ type: "image", url: image });
-    if (video) media.push({ type: "video", url: video });
+    if (imageData) media.push({ type: "image", url: imageData });
+    else if (imageUrl) media.push({ type: "image", url: imageUrl });
+    if (videoUrl) media.push({ type: "video", url: videoUrl });
+
     onAdd({ id, title, date, place, event, person, description, media });
-    setTitle(""); setPlace(""); setEvent(""); setPerson(""); setDescription(""); setImage(""); setVideo("");
+
+    // reset
+    setTitle(""); setDate("1900-01-01");
+    setPlace(""); setEvent(""); setPerson("");
+    setDescription(""); setImageUrl(""); setImageData(""); setVideoUrl("");
+    const fileInput = document.getElementById("image-file-input");
+    if (fileInput) fileInput.value = "";
   }
 
   return (
@@ -442,14 +457,27 @@ function QuickAdd({ onAdd }) {
         <span className="text-gray-500">Description</span>
         <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="rounded-xl border px-3 py-2" />
       </label>
+
+      {/* Image by URL */}
       <label className="flex flex-col gap-1">
         <span className="text-gray-500">Image URL (optional)</span>
-        <input value={image} onChange={(e) => setImage(e.target.value)} className="rounded-xl border px-3 py-2" placeholder="https://…" />
+        <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="rounded-xl border px-3 py-2" placeholder="https://…" />
+        <span className="text-xs text-gray-400 mt-1">Or upload a file →</span>
       </label>
+
+      {/* Image by upload */}
       <label className="flex flex-col gap-1">
-        <span className="text-gray-500">Video URL (optional)</span>
-        <input value={video} onChange={(e) => setVideo(e.target.value)} className="rounded-xl border px-3 py-2" placeholder="YouTube/Vimeo/MP4" />
+        <span className="text-gray-500">Upload image (optional)</span>
+        <input id="image-file-input" type="file" accept="image/*" onChange={onPickImage} className="rounded-xl border px-3 py-2" />
+        {imageData && <span className="text-xs text-gray-500">✓ Image attached</span>}
       </label>
+
+      {/* Video (URL) */}
+      <label className="flex flex-col gap-1 md:col-span-2">
+        <span className="text-gray-500">Video URL (optional)</span>
+        <input value={videoUrl} onChange={(e) => setVideoUrl(e.target.value)} className="rounded-xl border px-3 py-2" placeholder="YouTube/Vimeo/MP4" />
+      </label>
+
       <div className="md:col-span-2 flex justify-end">
         <button type="submit" className="rounded-xl bg-gray-900 text-white px-4 py-2 hover:bg-black">Add</button>
       </div>
@@ -457,9 +485,17 @@ function QuickAdd({ onAdd }) {
   );
 }
 
-/** ---- APP ---- */
+/* ---------------------- app ---------------------- */
 export default function TimelineApp() {
   const [items, setItems] = useState(getInitialItems());
+
+  // persist to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    } catch {}
+  }, [items]);
+
   const {
     view, setView,
     query, setQuery,
@@ -514,7 +550,14 @@ export default function TimelineApp() {
 
       <main className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-0">
         <section className="md:col-span-8 lg:col-span-9 bg-white">
-          <Detail item={selected} onPrev={handlePrev} onNext={handleNext} showAdd={showAdd} setShowAdd={setShowAdd} onAdd={handleAdd} />
+          <Detail
+            item={selected}
+            onPrev={handlePrev}
+            onNext={handleNext}
+            showAdd={showAdd}
+            setShowAdd={setShowAdd}
+            onAdd={handleAdd}
+          />
         </section>
 
         <section className="md:col-span-4 lg:col-span-3">
@@ -535,10 +578,9 @@ export default function TimelineApp() {
 
       <footer className="border-t bg-white/60 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 py-3 text-xs text-gray-500 flex flex-wrap items-center gap-3">
-          <span>Add entries with the button above; Person is optional.</span>
+          <span>Add entries with the button above; Person is optional. Images can be uploaded or linked.</span>
         </div>
       </footer>
     </div>
   );
 }
-
