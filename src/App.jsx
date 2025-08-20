@@ -1,6 +1,20 @@
 import React, { useMemo, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ChevronLeft, ChevronRight, Filter, MapPin, Calendar, Tag, Plus, X, User } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  MapPin,
+  Calendar,
+  Tag,
+  Plus,
+  X,
+  User,
+  Pencil,
+  Trash2,
+  Upload,
+  Download,
+} from "lucide-react";
 
 const START_YEAR = 1850;
 const CURRENT_YEAR = new Date().getFullYear();
@@ -30,7 +44,6 @@ function youtubeEmbed(url) {
   try {
     const u = new URL(url);
     if (u.hostname.includes("youtu")) {
-      // https://www.youtube.com/watch?v=ID  OR  https://youtu.be/ID
       const id = u.searchParams.get("v") || u.pathname.replace("/", "");
       return `https://www.youtube.com/embed/${id}`;
     }
@@ -75,8 +88,16 @@ function MediaRenderer({ media }) {
         if (m.type === "image") {
           return (
             <figure key={idx} className="rounded-2xl overflow-hidden shadow">
-              <img src={m.url} alt={m.caption || "media"} className="w-full h-auto object-cover" />
-              {m.caption ? <figcaption className="text-sm text-gray-500 p-2">{m.caption}</figcaption> : null}
+              <img
+                src={m.url}
+                alt={m.caption || "media"}
+                className="w-full h-auto object-cover"
+              />
+              {m.caption ? (
+                <figcaption className="text-sm text-gray-500 p-2">
+                  {m.caption}
+                </figcaption>
+              ) : null}
             </figure>
           );
         }
@@ -104,7 +125,9 @@ function MediaRenderer({ media }) {
                   Your browser does not support the video tag.
                 </video>
               )}
-              {m.caption ? <div className="text-sm text-gray-500 p-2">{m.caption}</div> : null}
+              {m.caption ? (
+                <div className="text-sm text-gray-500 p-2">{m.caption}</div>
+              ) : null}
             </div>
           );
         }
@@ -315,8 +338,10 @@ function RightRail({
   );
 }
 
-/* ---------------------- detail + quick add ---------------------- */
-function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
+/* ---------------------- detail + quick add/edit ---------------------- */
+function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd, onUpdate, onDelete }) {
+  const [editing, setEditing] = useState(false);
+
   // Empty state still shows "Add entry"
   if (!item) {
     return (
@@ -348,6 +373,27 @@ function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
     );
   }
 
+  if (editing) {
+    return (
+      <div className="p-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold">Edit entry</h2>
+          <button
+            onClick={() => setEditing(false)}
+            className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            <X className="w-4 h-4" /> Cancel
+          </button>
+        </div>
+        <EditForm
+          item={item}
+          onCancel={() => setEditing(false)}
+          onSave={(updated) => { onUpdate(updated); setEditing(false); }}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="p-6">
       <div className="flex items-start justify-between gap-2">
@@ -361,12 +407,33 @@ function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
           <button
             onClick={() => setShowAdd(!showAdd)}
             className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+            title="Add entry"
           >
-            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {showAdd ? "Close" : "Add entry"}
+            <Plus className="w-4 h-4" /> Add entry
+          </button>
+          <button
+            onClick={() => setEditing(true)}
+            className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+            title="Edit"
+          >
+            <Pencil className="w-4 h-4" /> Edit
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("Delete this entry?")) onDelete(item.id);
+            }}
+            className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-red-50 text-red-600 border-red-300"
+            title="Delete"
+          >
+            <Trash2 className="w-4 h-4" /> Delete
           </button>
           <div className="inline-flex rounded-xl overflow-hidden border">
-            <button onClick={onPrev} className="px-3 py-2 hover:bg-gray-50" title="Previous"><ChevronLeft className="w-5 h-5" /></button>
-            <button onClick={onNext} className="px-3 py-2 hover:bg-gray-50" title="Next"><ChevronRight className="w-5 h-5" /></button>
+            <button onClick={onPrev} className="px-3 py-2 hover:bg-gray-50" title="Previous">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={onNext} className="px-3 py-2 hover:bg-gray-50" title="Next">
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -485,6 +552,151 @@ function QuickAdd({ onAdd }) {
   );
 }
 
+function EditForm({ item, onSave, onCancel }) {
+  const existingImage = item.media?.find((m) => m.type === "image") || null;
+  const existingVideo = item.media?.find((m) => m.type === "video") || null;
+
+  const [title, setTitle] = useState(item.title);
+  const [date, setDate] = useState(item.date);
+  const [place, setPlace] = useState(item.place || "");
+  const [event, setEvent] = useState(item.event || "");
+  const [person, setPerson] = useState(item.person || "");
+  const [description, setDescription] = useState(item.description || "");
+
+  const [imageUrl, setImageUrl] = useState(
+    existingImage && !String(existingImage.url).startsWith("data:") ? existingImage.url : ""
+  );
+  const [imageData, setImageData] = useState(""); // new data URL from file
+  const [keepExistingImage, setKeepExistingImage] = useState(!!existingImage);
+
+  const [videoUrl, setVideoUrl] = useState(existingVideo?.url || "");
+
+  function onPickImage(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageData(String(reader.result));
+      setKeepExistingImage(false);
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function submit(e) {
+    e.preventDefault();
+    const media = [];
+
+    if (imageData) {
+      media.push({ type: "image", url: imageData });
+    } else if (imageUrl) {
+      media.push({ type: "image", url: imageUrl });
+    } else if (keepExistingImage && existingImage) {
+      media.push(existingImage);
+    }
+
+    if (videoUrl) media.push({ type: "video", url: videoUrl });
+
+    onSave({
+      ...item,
+      title,
+      date,
+      place,
+      event,
+      person,
+      description,
+      media,
+    });
+  }
+
+  return (
+    <form onSubmit={submit} className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Title</span>
+        <input value={title} onChange={(e) => setTitle(e.target.value)} required className="rounded-xl border px-3 py-2" />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Date</span>
+        <input type="date" value={date} onChange={(e) => setDate(e.target.value)} required className="rounded-xl border px-3 py-2" />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Place</span>
+        <input value={place} onChange={(e) => setPlace(e.target.value)} required className="rounded-xl border px-3 py-2" />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Event (category)</span>
+        <input value={event} onChange={(e) => setEvent(e.target.value)} required className="rounded-xl border px-3 py-2" />
+      </label>
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Person</span>
+        <input value={person} onChange={(e) => setPerson(e.target.value)} className="rounded-xl border px-3 py-2" />
+      </label>
+      <label className="flex flex-col gap-1 md:col-span-2">
+        <span className="text-gray-500">Description</span>
+        <textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={4} className="rounded-xl border px-3 py-2" />
+      </label>
+
+      {/* Image by URL */}
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Image URL</span>
+        <input
+          value={imageUrl}
+          onChange={(e) => {
+            setImageUrl(e.target.value);
+            setKeepExistingImage(false);
+          }}
+          className="rounded-xl border px-3 py-2"
+          placeholder="https://…"
+        />
+        {existingImage && (
+          <label className="mt-1 inline-flex items-center gap-2 text-xs text-gray-600">
+            <input
+              type="checkbox"
+              checked={keepExistingImage && !imageData && !imageUrl}
+              onChange={(e) => setKeepExistingImage(e.target.checked)}
+            />
+            Keep current image (if no new file/URL)
+          </label>
+        )}
+      </label>
+
+      {/* Image upload */}
+      <label className="flex flex-col gap-1">
+        <span className="text-gray-500">Upload image</span>
+        <input
+          id="edit-image-file-input"
+          type="file"
+          accept="image/*"
+          onChange={onPickImage}
+          className="rounded-xl border px-3 py-2"
+        />
+        {(imageData || (keepExistingImage && existingImage)) && (
+          <span className="text-xs text-gray-500">✓ Image will be saved</span>
+        )}
+      </label>
+
+      {/* Video URL */}
+      <label className="flex flex-col gap-1 md:col-span-2">
+        <span className="text-gray-500">Video URL</span>
+        <input
+          value={videoUrl}
+          onChange={(e) => setVideoUrl(e.target.value)}
+          className="rounded-xl border px-3 py-2"
+          placeholder="YouTube/Vimeo/MP4"
+        />
+      </label>
+
+      <div className="md:col-span-2 flex justify-end gap-2">
+        <button type="button" onClick={onCancel} className="rounded-xl border px-4 py-2 hover:bg-gray-50">
+          Cancel
+        </button>
+        <button type="submit" className="rounded-xl bg-gray-900 text-white px-4 py-2 hover:bg-black">
+          Save
+        </button>
+      </div>
+    </form>
+  );
+}
+
 /* ---------------------- app ---------------------- */
 export default function TimelineApp() {
   const [items, setItems] = useState(getInitialItems());
@@ -508,14 +720,19 @@ export default function TimelineApp() {
   } = useFilters(items);
 
   const [selectedId, setSelectedId] = useState(null);
-  const selectedIndex = useMemo(() => filtered.findIndex((i) => i.id === selectedId), [filtered, selectedId]);
+  const selectedIndex = useMemo(
+    () => filtered.findIndex((i) => i.id === selectedId),
+    [filtered, selectedId]
+  );
   const selected = filtered[selectedIndex] || filtered[0] || null;
 
   useEffect(() => {
     if (!selectedId && filtered[0]) setSelectedId(filtered[0].id);
   }, [filtered, selectedId]);
 
-  function handleSelect(id) { setSelectedId(id); }
+  function handleSelect(id) {
+    setSelectedId(id);
+  }
   function handlePrev() {
     if (!filtered.length) return;
     const idx = selectedIndex <= 0 ? filtered.length - 1 : selectedIndex - 1;
@@ -534,17 +751,162 @@ export default function TimelineApp() {
     setSelectedId(newItem.id);
   }
 
+  function handleUpdate(updated) {
+    setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    setSelectedId(updated.id);
+  }
+
+  function handleDelete(id) {
+    setItems((prev) => prev.filter((i) => i.id !== id));
+    setSelectedId(null);
+  }
+
+  /* ---------- export / import ---------- */
+
+  function exportJSON() {
+    try {
+      const data = JSON.stringify(items, null, 2);
+      const blob = new Blob([data], { type: "application/json" });
+      const ts = new Date();
+      const yyyy = ts.getFullYear();
+      const mm = String(ts.getMonth() + 1).padStart(2, "0");
+      const dd = String(ts.getDate()).padStart(2, "0");
+      const hh = String(ts.getHours()).padStart(2, "0");
+      const mi = String(ts.getMinutes()).padStart(2, "0");
+      const ss = String(ts.getSeconds()).padStart(2, "0");
+      const filename = `timeline-${yyyy}${mm}${dd}-${hh}${mi}${ss}.json`;
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert("Export failed: " + e?.message || e);
+    }
+  }
+
+  function coerceItem(raw) {
+    const safe = typeof raw === "object" && raw ? { ...raw } : {};
+    safe.title = String(safe.title ?? "").trim();
+    safe.date = String(safe.date ?? "").trim();
+    safe.place = String(safe.place ?? "");
+    safe.event = String(safe.event ?? "");
+    safe.person = String(safe.person ?? "");
+    safe.description = String(safe.description ?? "");
+    // id
+    if (!safe.id) {
+      const slug = (safe.title || "item")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/(^-|-$)/g, "");
+      safe.id = `${slug}-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+    } else {
+      safe.id = String(safe.id);
+    }
+    // media
+    const media = Array.isArray(safe.media) ? safe.media : [];
+    safe.media = media
+      .map((m) => ({
+        type: m?.type === "video" ? "video" : "image",
+        url: String(m?.url ?? ""),
+        caption: m?.caption ? String(m.caption) : undefined,
+      }))
+      .filter((m) => !!m.url);
+    return safe;
+  }
+
+  function importFromText(jsonText, mode = "merge") {
+    const parsed = JSON.parse(jsonText);
+    if (!Array.isArray(parsed)) throw new Error("File must contain a JSON array");
+    const incoming = parsed.map(coerceItem);
+
+    if (mode === "replace") {
+      setItems(incoming);
+      setSelectedId(incoming[0]?.id ?? null);
+      return incoming.length;
+    } else {
+      // merge by id (file wins)
+      setItems((prev) => {
+        const map = new Map(prev.map((i) => [i.id, i]));
+        for (const it of incoming) map.set(it.id, it);
+        const merged = Array.from(map.values());
+        // keep current selection if still present
+        const still = merged.find((i) => i.id === selectedId);
+        if (!still) setSelectedId(merged[0]?.id ?? null);
+        return merged;
+      });
+      return incoming.length;
+    }
+  }
+
+  function onChooseImportFile(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const replace = confirm(
+      "Import JSON\n\nOK = REPLACE current items with file\nCancel = MERGE with current items"
+    );
+    const mode = replace ? "replace" : "merge";
+    const reader = new FileReader();
+    reader.onload = () => {
+      try {
+        const count = importFromText(String(reader.result), mode);
+        alert(`Imported ${count} item(s) (${mode}).`);
+      } catch (err) {
+        alert("Import failed: " + (err?.message || err));
+      } finally {
+        e.target.value = "";
+      }
+    };
+    reader.readAsText(file);
+  }
+
+  function triggerImport() {
+    const input = document.getElementById("import-json-input");
+    if (input) input.click();
+  }
+
   const timelineList = filtered;
 
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
-          <div>
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <h1 className="text-xl font-bold">Dynamic Timeline · 1850—{CURRENT_YEAR}</h1>
-            <p className="text-sm text-gray-500">Four views: Date · Place · Event · Person. Timeline docked on the right.</p>
+            <p className="text-sm text-gray-500 truncate">
+              Four views: Date · Place · Event · Person. Timeline docked on the right.
+            </p>
           </div>
-          <div className="hidden md:block text-sm text-gray-500">{timelineList.length} items</div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden md:inline text-sm text-gray-500">{timelineList.length} items</span>
+
+            <button
+              onClick={exportJSON}
+              className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+              title="Export JSON"
+            >
+              <Download className="w-4 h-4" /> Export
+            </button>
+
+            <button
+              onClick={triggerImport}
+              className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+              title="Import JSON"
+            >
+              <Upload className="w-4 h-4" /> Import
+            </button>
+
+            {/* hidden file input for import */}
+            <input
+              id="import-json-input"
+              type="file"
+              accept="application/json,.json"
+              className="hidden"
+              onChange={onChooseImportFile}
+            />
+          </div>
         </div>
       </header>
 
@@ -557,19 +919,31 @@ export default function TimelineApp() {
             showAdd={showAdd}
             setShowAdd={setShowAdd}
             onAdd={handleAdd}
+            onUpdate={handleUpdate}
+            onDelete={handleDelete}
           />
         </section>
 
         <section className="md:col-span-4 lg:col-span-3">
           <RightRail
             items={timelineList}
-            view={view} setView={setView}
-            query={query} setQuery={setQuery}
-            yearFrom={yearFrom} setYearFrom={setYearFrom}
-            yearTo={yearTo} setYearTo={setYearTo}
-            place={place} setPlace={setPlace} places={places}
-            event={event} setEvent={setEvent} events={events}
-            person={person} setPerson={setPerson} persons={persons}
+            view={view}
+            setView={setView}
+            query={query}
+            setQuery={setQuery}
+            yearFrom={yearFrom}
+            setYearFrom={setYearFrom}
+            yearTo={yearTo}
+            setYearTo={setYearTo}
+            place={place}
+            setPlace={setPlace}
+            places={places}
+            event={event}
+            setEvent={setEvent}
+            events={events}
+            person={person}
+            setPerson={setPerson}
+            persons={persons}
             selectedId={selected?.id}
             onSelect={handleSelect}
           />
@@ -578,7 +952,7 @@ export default function TimelineApp() {
 
       <footer className="border-t bg-white/60 backdrop-blur">
         <div className="max-w-7xl mx-auto px-4 py-3 text-xs text-gray-500 flex flex-wrap items-center gap-3">
-          <span>Add entries with the button above; Person is optional. Images can be uploaded or linked.</span>
+          <span>Add, edit, delete entries. Import/Export JSON to move data between devices. Images can be uploaded or linked.</span>
         </div>
       </footer>
     </div>
