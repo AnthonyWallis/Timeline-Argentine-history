@@ -310,24 +310,68 @@ function RightRail({
 
 /** ---- DETAIL + QUICK ADD ---- */
 function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
-  if (!item) return <div className="p-6 text-gray-500">Use <b>Add entry</b> to add your first item.</div>;
+  // Show an "Add entry" button even when there are no items yet
+  if (!item) {
+    return (
+      <div className="p-6">
+        <div className="flex items-start justify-between gap-2">
+          <p className="text-gray-500">
+            Use <b>Add entry</b> to add your first item.
+          </p>
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}{" "}
+            {showAdd ? "Close" : "Add entry"}
+          </button>
+        </div>
 
+        <AnimatePresence>
+          {showAdd && (
+            <motion.div
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              className="mt-6 p-4 rounded-2xl border bg-white shadow-sm"
+            >
+              <h2 className="text-lg font-semibold mb-3">
+                Quick add your first entry
+              </h2>
+              <QuickAdd onAdd={onAdd} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
+  }
+
+  // Normal detail view (unchanged)
   return (
     <div className="p-6">
       <div className="flex items-start justify-between gap-2">
         <div>
           <div className="text-sm text-gray-500">
-            {formatDate(item.date)} • {item.place} • {item.event}{item.person ? ` • ${item.person}` : ""}
+            {formatDate(item.date)} • {item.place} • {item.event}
+            {item.person ? ` • ${item.person}` : ""}
           </div>
           <h1 className="text-2xl font-bold mt-1">{item.title}</h1>
         </div>
         <div className="flex items-center gap-2">
-          <button onClick={() => setShowAdd(!showAdd)} className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50">
-            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />} {showAdd ? "Close" : "Add entry"}
+          <button
+            onClick={() => setShowAdd(!showAdd)}
+            className="inline-flex items-center gap-1 rounded-xl border px-3 py-2 text-sm hover:bg-gray-50"
+          >
+            {showAdd ? <X className="w-4 h-4" /> : <Plus className="w-4 h-4" />}{" "}
+            {showAdd ? "Close" : "Add entry"}
           </button>
           <div className="inline-flex rounded-xl overflow-hidden border">
-            <button onClick={onPrev} className="px-3 py-2 hover:bg-gray-50" title="Previous"><ChevronLeft className="w-5 h-5" /></button>
-            <button onClick={onNext} className="px-3 py-2 hover:bg-gray-50" title="Next"><ChevronRight className="w-5 h-5" /></button>
+            <button onClick={onPrev} className="px-3 py-2 hover:bg-gray-50" title="Previous">
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button onClick={onNext} className="px-3 py-2 hover:bg-gray-50" title="Next">
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </div>
         </div>
       </div>
@@ -337,7 +381,12 @@ function Detail({ item, onPrev, onNext, showAdd, setShowAdd, onAdd }) {
 
       <AnimatePresence>
         {showAdd && (
-          <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }} className="mt-8 p-4 rounded-2xl border bg-white shadow-sm">
+          <motion.div
+            initial={{ opacity: 0, y: -8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="mt-8 p-4 rounded-2xl border bg-white shadow-sm"
+          >
             <h2 className="text-lg font-semibold mb-3">Quick add a new entry</h2>
             <QuickAdd onAdd={onAdd} />
           </motion.div>
