@@ -1,6 +1,6 @@
-# Right-Side Dynamic Timeline (1850–Today)
+# History of the testimony in South America
 
-Interactive timeline web app with a right-docked rail and three views (Date · Place · Event). Each entry supports text, images, and video embeds.
+Interactive timeline web app. Each entry supports text, images, and video embeds.
 
 ## Quick Start
 ```bash

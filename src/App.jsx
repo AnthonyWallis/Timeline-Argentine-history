@@ -873,10 +873,7 @@ export default function TimelineApp() {
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
         <div className="w-full mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <h1 className="text-xl font-bold">Dynamic Timeline · 1850—{CURRENT_YEAR}</h1>
-            <p className="text-sm text-gray-500 truncate">
-              Four views: Date · Place · Event · Person. Timeline docked on the right.
-            </p>
+            <h1 className="text-xl font-bold">History of the testimony in South America</h1>
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
