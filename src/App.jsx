@@ -16,7 +16,7 @@ import {
   Download,
 } from "lucide-react";
 
-const START_YEAR = 1850;
+const START_YEAR = 1750;
 const CURRENT_YEAR = new Date().getFullYear();
 const STORAGE_KEY = "timeline-items-v1";
 
