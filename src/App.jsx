@@ -871,7 +871,7 @@ export default function TimelineApp() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="sticky top-0 z-10 bg-white/80 backdrop-blur border-b">
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+        <div className="w-full mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
             <h1 className="text-xl font-bold">Dynamic Timeline · 1850—{CURRENT_YEAR}</h1>
             <p className="text-sm text-gray-500 truncate">
@@ -910,8 +910,8 @@ export default function TimelineApp() {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-0">
-        <section className="md:col-span-8 lg:col-span-9 bg-white">
+      <main className="w-full mx-auto grid grid-cols-1 md:grid-cols-[2fr_1fr] gap-0">
+        <section className="bg-white">
           <Detail
             item={selected}
             onPrev={handlePrev}
@@ -924,7 +924,7 @@ export default function TimelineApp() {
           />
         </section>
 
-        <section className="md:col-span-4 lg:col-span-3">
+        <section>
           <RightRail
             items={timelineList}
             view={view}
@@ -951,7 +951,7 @@ export default function TimelineApp() {
       </main>
 
       <footer className="border-t bg-white/60 backdrop-blur">
-        <div className="max-w-7xl mx-auto px-4 py-3 text-xs text-gray-500 flex flex-wrap items-center gap-3">
+        <div className="w-full mx-auto px-4 py-3 text-xs text-gray-500 flex flex-wrap items-center gap-3">
           <span>Add, edit, delete entries. Import/Export JSON to move data between devices. Images can be uploaded or linked.</span>
         </div>
       </footer>
